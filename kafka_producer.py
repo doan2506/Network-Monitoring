@@ -15,7 +15,7 @@ def run_producer():
     )
 
     topic_name = 'network_traffic'
-    parquet_files = glob.glob('./data/*.parquet')
+    parquet_files = ['./data']
     
     if not parquet_files:
         print("No Parquet files found in ./data directory.")
@@ -32,9 +32,6 @@ def run_producer():
             for col in drop_cols:
                 if col in df.columns:
                     df = df.drop(columns=[col])
-                    
-            # Sample a subset to simulate a continuous data stream without overloading
-            df = df.sample(frac=0.01, random_state=42).reset_index(drop=True)
             
             for index, row in df.iterrows():
                 record = row.to_dict()

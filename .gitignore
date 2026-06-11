@@ -1,6 +1,6 @@
 # Dataset
 data/*
-!data/sample.parquet
+!data/DoS-Wednesday-no-metadata.parquet
 
 # Model files
 training_model/*.npy

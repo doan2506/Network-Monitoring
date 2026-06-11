@@ -5,8 +5,8 @@ This project implements a big data pipeline to monitor network traffic in real-t
 
 ### Dataset
 - **Full CIC-IDS2017**: [https://www.kaggle.com/datasets/dhoogla/cicids2017](https://www.kaggle.com/datasets/dhoogla/cicids2017)
-  - *Note: Since the dataset is too large for GitHub, we have included a small `sample.parquet` file in the `data/` folder so you can run the pipeline out-of-the-box.*
-  - *To run a full simulation, download the `.parquet` files from the link above and place them inside the `data/` directory.*
+  - *Note: We have included the `DoS-Wednesday-no-metadata.parquet` file in the `data/` folder so you can test the pipeline out-of-the-box with DoS attacks.*
+  - *To run a full simulation with all attack types, download the remaining `.parquet` files from the link above and place them in `data/`.*
 
 ### Technology Stack
 - **Kafka & Zookeeper**: Ingests and buffers real-time network flow data.
