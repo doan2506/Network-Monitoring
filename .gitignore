@@ -2,7 +2,6 @@
 data/
 
 # Model files
-training_model/*.pkl
 training_model/*.npy
 training_model/*.csv
 
