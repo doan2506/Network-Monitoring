@@ -1,0 +1,16 @@
+# Dataset
+data/
+
+# Model files
+training_model/*.pkl
+training_model/*.npy
+training_model/*.csv
+
+# Spark output & checkpoints
+hdfs_data/
+checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
