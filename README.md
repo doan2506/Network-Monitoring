@@ -46,8 +46,6 @@ It is highly recommended to create a virtual environment before installing the d
 # Create a virtual environment named 'venv'
 python -m venv venv
 
-# Activate it (Windows)
-venv\Scripts\activate
 # Activate it (Linux/macOS)
 source venv/bin/activate
 ```
@@ -62,7 +60,7 @@ Apache Spark requires Java to run. Ensure you have **Java 17** installed on your
 
 1. Install Java 17:
 ```bash
-sudo apt-get update && sudo apt-get install -y openjdk-11-jdk
+sudo apt-get update && sudo apt-get install -y openjdk-17-jdk
 ```
 2. Set the `JAVA_HOME` environment variable:
 ```bash

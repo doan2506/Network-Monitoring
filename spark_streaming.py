@@ -70,7 +70,7 @@ def process_batch(batch_df, batch_id):
     if pdf.empty:
         return
         
-    client = InfluxDBClient(host='localhost', port=8086, database='ids_db')
+    client = InfluxDBClient(host='influxdb', port=8086, database='ids_db')
     
     # Compute metrics
     total_records = len(pdf)
