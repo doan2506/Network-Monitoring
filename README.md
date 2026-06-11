@@ -4,7 +4,9 @@
 This project implements a big data pipeline to monitor network traffic in real-time, detecting cyber attacks using the CIC-IDS2017 dataset and a pre-trained Random Forest model.
 
 ### Dataset
-- **CIC-IDS2017**: [https://www.kaggle.com/datasets/dhoogla/cicids2017](https://www.kaggle.com/datasets/dhoogla/cicids2017)
+- **Full CIC-IDS2017**: [https://www.kaggle.com/datasets/dhoogla/cicids2017](https://www.kaggle.com/datasets/dhoogla/cicids2017)
+  - *Note: Since the dataset is too large for GitHub, we have included a small `sample.parquet` file in the `data/` folder so you can run the pipeline out-of-the-box.*
+  - *To run a full simulation, download the `.parquet` files from the link above and place them inside the `data/` directory.*
 
 ### Technology Stack
 - **Kafka & Zookeeper**: Ingests and buffers real-time network flow data.
