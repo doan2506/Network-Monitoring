@@ -57,20 +57,33 @@ Then, install the requirements:
 pip install -r requirements.txt
 ```
 
-### 3. Start the Spark Streaming Job
+### 3. Install Java 17 (Required for PySpark)
+Apache Spark requires Java to run. Ensure you have **Java 17** installed on your system.
+
+1. Install Java 17:
+```bash
+sudo apt-get update && sudo apt-get install -y openjdk-11-jdk
+```
+2. Set the `JAVA_HOME` environment variable:
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+```
+
+### 4. Start the Spark Streaming Job
 In a new terminal, launch the PySpark streaming process:
 ```bash
 python spark_streaming.py
 ```
 *(Wait until it says "Starting Streaming Query...")*
 
-### 4. Start the Kafka Producer
+### 5. Start the Kafka Producer
 In another terminal, run the script to simulate network traffic generation:
 ```bash
 python kafka_producer.py
 ```
 
-### 5. View Real-Time Dashboard (Grafana)
+### 6. View Real-Time Dashboard (Grafana)
 1. Open Grafana at [http://localhost:3000](http://localhost:3000)
 2. Login with `admin` / `admin`.
 3. Add a Data Source: Choose **InfluxDB**.
