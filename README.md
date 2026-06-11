@@ -37,7 +37,20 @@ This starts:
 - Grafana (Port `3000`)
 
 ### 2. Install Dependencies
-Ensure you have a Python environment ready (using conda or venv):
+It is highly recommended to create a virtual environment before installing the dependencies.
+
+**Create and activate a virtual environment:**
+```bash
+# Create a virtual environment named 'venv'
+python -m venv venv
+
+# Activate it (Windows)
+venv\Scripts\activate
+# Activate it (Linux/macOS)
+source venv/bin/activate
+```
+
+Then, install the requirements:
 ```bash
 pip install -r requirements.txt
 ```
