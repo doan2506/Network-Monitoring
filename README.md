@@ -4,10 +4,9 @@
 This project implements a big data pipeline to monitor network traffic in real-time, detecting cyber attacks using the CIC-IDS2017 dataset and a pre-trained Random Forest model.
 
 ### Dataset
-- **Full CIC-IDS2017**: [https://www.kaggle.com/datasets/dhoogla/cicids2017](https://www.kaggle.com/datasets/dhoogla/cicids2017)
-  - *Note: We have included the `DoS-Wednesday-no-metadata.parquet` file in the `data/` folder so you can test the pipeline out-of-the-box with DoS attacks.*
-  - *To run a full simulation with all attack types, download the remaining `.parquet` files from the link above and place them in `data/`.*
-
+- **Full CIC-IDS2017**: [https://www.unb.ca/cic/datasets/ids-2017.html](https://www.unb.ca/cic/datasets/ids-2017.html)
+  - *Note: For demo purposes, we have included only the `data/parquet/DoS-Wednesday-WorkingHours.pcap_ISCX.parquet` file so you can test the pipeline out-of-the-box with DoS attacks.*
+  - *To run a full simulation with all attack types, download the raw `.csv` files from the link above, run the preprocessing notebooks, and place the resulting files in your data directories.*
 ### Technology Stack
 - **Kafka & Zookeeper**: Ingests and buffers real-time network flow data.
 - **Spark Structured Streaming**: Processes real-time streams, executes the ML model for attack detection, and handles data sinks.
