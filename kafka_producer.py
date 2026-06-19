@@ -2,10 +2,19 @@ import pandas as pd
 import json
 import time
 import glob
+import numpy as np
 from kafka import KafkaProducer
 
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (np.integer, np.floating)):
+            return obj.item()
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)
+
 def json_serializer(data):
-    return json.dumps(data).encode('utf-8')
+    return json.dumps(data, cls=NpEncoder).encode('utf-8')
 
 def run_producer():
     print("Initialize Kafka Producer")
@@ -15,7 +24,7 @@ def run_producer():
     )
 
     topic_name = 'network_traffic'
-    parquet_files = ['./data']
+    parquet_files = glob.glob('./data/**/*.parquet', recursive=True)
     
     if not parquet_files:
         print("No Parquet files found in ./data directory.")
