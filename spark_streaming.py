@@ -5,6 +5,7 @@ from typing import Iterator
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col, struct, pandas_udf
+from pyspark.sql import functions as F
 from pyspark.sql.types import StructType, StructField, DoubleType, IntegerType
 from influxdb import InfluxDBClient
 
@@ -36,9 +37,10 @@ FEATURE_COLS = [
 spark = SparkSession.builder \
     .appName("IDS_RealTime_Monitoring") \
     .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0") \
+    .config("spark.hadoop.fs.defaultFS", "file:///") \
     .getOrCreate()
 
-spark.sparkContext.setLogLevel("WARN")
+spark.sparkContext.setLogLevel("ERROR")
 
 # Schema for incoming JSON data
 schema = StructType([StructField(c, DoubleType(), True) for c in FEATURE_COLS])
@@ -65,17 +67,23 @@ def process_batch(batch_df, batch_id):
     # Simulate writing to Hadoop/HDFS by saving locally
     batch_df.write.mode("append").parquet("./hdfs_data/processed_traffic")
     
-    # Send aggregate metrics to InfluxDB
-    pdf = batch_df.toPandas()
-    if pdf.empty:
+    # Compute metrics using Spark aggregation to avoid pulling raw data to the driver
+    metrics_df = batch_df.select(
+        F.count("*").alias("total_flows"),
+        F.sum(F.when(F.col("prediction") == 1, 1).otherwise(0)).alias("attack_count"),
+        F.sum(F.when(F.col("prediction") == 0, 1).otherwise(0)).alias("benign_count")
+    )
+    
+    metrics = metrics_df.collect()[0]
+    total_records = metrics["total_flows"]
+    
+    if total_records == 0:
         return
         
+    attack_count = int(metrics["attack_count"]) if metrics["attack_count"] is not None else 0
+    benign_count = int(metrics["benign_count"]) if metrics["benign_count"] is not None else 0
+        
     client = InfluxDBClient(host='localhost', port=8086, database='ids_db')
-    
-    # Compute metrics
-    total_records = len(pdf)
-    attack_count = int((pdf['prediction'] == 1).sum())
-    benign_count = int((pdf['prediction'] == 0).sum())
     
     json_body = [
         {
