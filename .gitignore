@@ -1,5 +1,7 @@
 # Dataset
 data/*
+!data/parquet/
+data/parquet/*
 !data/parquet/DoS-Wednesday-WorkingHours.pcap_ISCX.parquet
 
 # Model files
