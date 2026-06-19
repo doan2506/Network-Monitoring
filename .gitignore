@@ -1,6 +1,6 @@
 # Dataset
 data/*
-!data/DoS-Wednesday-no-metadata.parquet
+!data/parquet/DoS-Wednesday-WorkingHours.pcap_ISCX.parquet
 
 # Model files
 training_model/*.npy

@@ -7,3 +7,4 @@ scikit-learn==1.4.1.post1
 numpy
 pyarrow
 setuptools
+imbalanced-learn

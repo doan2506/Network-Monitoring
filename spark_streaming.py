@@ -10,7 +10,7 @@ from influxdb import InfluxDBClient
 
 # Feature columns extracted from notebook
 FEATURE_COLS = [
-    'Protocol', 'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets', 
+    'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets', 
     'Fwd Packets Length Total', 'Bwd Packets Length Total', 'Fwd Packet Length Max', 
     'Fwd Packet Length Min', 'Fwd Packet Length Mean', 'Fwd Packet Length Std', 
     'Bwd Packet Length Max', 'Bwd Packet Length Min', 'Bwd Packet Length Mean', 
@@ -44,7 +44,8 @@ spark.sparkContext.setLogLevel("WARN")
 schema = StructType([StructField(c, DoubleType(), True) for c in FEATURE_COLS])
 
 # Broadcast Scikit-learn Pipeline
-model_path = os.path.abspath("./training_model/rf_pipeline.pkl")
+script_dir = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(script_dir, "training_model", "rf_pipeline.pkl")
 rf_pipeline = joblib.load(model_path)
 broadcast_model = spark.sparkContext.broadcast(rf_pipeline)
 
@@ -59,10 +60,6 @@ def predict_attack(iterator: Iterator[pd.DataFrame]) -> Iterator[pd.Series]:
         yield pd.Series(predictions)
 
 def process_batch(batch_df, batch_id):
-    """
-    ForeachBatch function to write predictions to InfluxDB and HDFS
-    """
-    # Simulate writing to Hadoop/HDFS by saving locally
     batch_df.write.mode("append").parquet("./hdfs_data/processed_traffic")
     
     # Send aggregate metrics to InfluxDB

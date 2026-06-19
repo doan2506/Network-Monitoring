@@ -8,7 +8,7 @@ def json_serializer(data):
     return json.dumps(data).encode('utf-8')
 
 def run_producer():
-    print("Initialize Kafka Producer...")
+    print("Initialize Kafka Producer")
     producer = KafkaProducer(
         bootstrap_servers=['localhost:29092'], # Connecting to Kafka exposed on host
         value_serializer=json_serializer
@@ -27,7 +27,6 @@ def run_producer():
         print(f"Reading file: {file}")
         try:
             df = pd.read_parquet(file)
-            # Drop Label and source_file since we just want to send features
             drop_cols = ['Label', 'source_file', 'target']
             for col in drop_cols:
                 if col in df.columns:
