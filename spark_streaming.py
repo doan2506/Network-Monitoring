@@ -2,6 +2,9 @@ import os
 import joblib
 import pandas as pd
 import warnings
+import json
+import urllib.request
+import urllib.parse
 from typing import Iterator
 
 warnings.filterwarnings("ignore")
@@ -11,6 +14,13 @@ from pyspark.sql.functions import from_json, col, struct, pandas_udf
 from pyspark.sql import functions as F
 from pyspark.sql.types import StructType, StructField, DoubleType, IntegerType
 from influxdb import InfluxDBClient
+from kafka import KafkaProducer
+
+# Khởi tạo Kafka Producer dùng cho Alerting
+alert_producer = KafkaProducer(
+    bootstrap_servers=['localhost:29092'],
+    value_serializer=lambda v: json.dumps(v).encode('utf-8')
+)
 
 # Global InfluxDB client reference (explicitly initialized in main)
 influx_client = None
@@ -38,6 +48,8 @@ FEATURE_COLS = [
     'Fwd Act Data Packets', 'Fwd Seg Size Min', 'Active Mean', 'Active Std', 
     'Active Max', 'Active Min', 'Idle Mean', 'Idle Std', 'Idle Max', 'Idle Min'
 ]
+
+# Telegram function removed: Handled by external telegram_alerter.py via Kafka
 
 # Create Spark Session
 spark = SparkSession.builder \
@@ -74,7 +86,25 @@ def process_batch(batch_df, batch_id):
     metrics_df = batch_df.select(
         F.count("*").alias("total_flows"),
         F.sum(F.when(F.col("prediction") == 1, 1).otherwise(0)).alias("attack_count"),
-        F.sum(F.when(F.col("prediction") == 0, 1).otherwise(0)).alias("benign_count")
+        F.sum(F.when(F.col("prediction") == 0, 1).otherwise(0)).alias("benign_count"),
+        
+        # TCP Flags
+        F.sum("SYN Flag Count").alias("syn_flags"),
+        F.sum("ACK Flag Count").alias("ack_flags"),
+        F.sum("RST Flag Count").alias("rst_flags"),
+        F.sum("FIN Flag Count").alias("fin_flags"),
+        F.sum("PSH Flag Count").alias("psh_flags"),
+        
+        # Traffic Volume & Rates
+        F.avg("Flow Packets/s").alias("flow_packets_s"),
+        F.avg("Flow Bytes/s").alias("flow_bytes_s"),
+        
+        # Packet Lengths
+        F.max("Fwd Packet Length Max").alias("fwd_pkt_len_max"),
+        F.max("Bwd Packet Length Max").alias("bwd_pkt_len_max"),
+        
+        # Timing & Duration
+        F.avg("Flow Duration").alias("flow_duration")
     )
     
     metrics = metrics_df.collect()[0]
@@ -95,7 +125,17 @@ def process_batch(batch_df, batch_id):
             "fields": {
                 "total_flows": total_records,
                 "attack_count": attack_count,
-                "benign_count": benign_count
+                "benign_count": benign_count,
+                "syn_flags": int(metrics["syn_flags"]) if metrics["syn_flags"] is not None else 0,
+                "ack_flags": int(metrics["ack_flags"]) if metrics["ack_flags"] is not None else 0,
+                "rst_flags": int(metrics["rst_flags"]) if metrics["rst_flags"] is not None else 0,
+                "fin_flags": int(metrics["fin_flags"]) if metrics["fin_flags"] is not None else 0,
+                "psh_flags": int(metrics["psh_flags"]) if metrics["psh_flags"] is not None else 0,
+                "flow_packets_s": float(metrics["flow_packets_s"]) if metrics["flow_packets_s"] is not None else 0.0,
+                "flow_bytes_s": float(metrics["flow_bytes_s"]) if metrics["flow_bytes_s"] is not None else 0.0,
+                "fwd_pkt_len_max": float(metrics["fwd_pkt_len_max"]) if metrics["fwd_pkt_len_max"] is not None else 0.0,
+                "bwd_pkt_len_max": float(metrics["bwd_pkt_len_max"]) if metrics["bwd_pkt_len_max"] is not None else 0.0,
+                "flow_duration": float(metrics["flow_duration"]) if metrics["flow_duration"] is not None else 0.0
             }
         }
     ]
@@ -103,6 +143,27 @@ def process_batch(batch_df, batch_id):
         if influx_client is not None:
             influx_client.write_points(json_body)
         print(f"Batch {batch_id} processed: {total_records} records, {attack_count} attacks detected.")
+        
+        if attack_count > 0:
+            # Gửi toàn bộ metrics của batch này sang Kafka
+            alert_payload = {
+                "total_flows": total_records,
+                "attack_count": attack_count,
+                "benign_count": benign_count,
+                "syn_flags": int(metrics["syn_flags"]) if metrics["syn_flags"] is not None else 0,
+                "ack_flags": int(metrics["ack_flags"]) if metrics["ack_flags"] is not None else 0,
+                "rst_flags": int(metrics["rst_flags"]) if metrics["rst_flags"] is not None else 0,
+                "fin_flags": int(metrics["fin_flags"]) if metrics["fin_flags"] is not None else 0,
+                "psh_flags": int(metrics["psh_flags"]) if metrics["psh_flags"] is not None else 0,
+                "flow_packets_s": float(metrics["flow_packets_s"]) if metrics["flow_packets_s"] is not None else 0.0,
+                "flow_bytes_s": float(metrics["flow_bytes_s"]) if metrics["flow_bytes_s"] is not None else 0.0,
+                "fwd_pkt_len_max": float(metrics["fwd_pkt_len_max"]) if metrics["fwd_pkt_len_max"] is not None else 0.0,
+                "bwd_pkt_len_max": float(metrics["bwd_pkt_len_max"]) if metrics["bwd_pkt_len_max"] is not None else 0.0,
+                "flow_duration": float(metrics["flow_duration"]) if metrics["flow_duration"] is not None else 0.0
+            }
+            alert_producer.send('network_alerts', alert_payload)
+            alert_producer.flush()
+            
     except Exception as e:
         print(f"Error writing to InfluxDB: {e}")
 
@@ -134,7 +195,7 @@ def main():
     features_struct = struct(*[col(c) for c in FEATURE_COLS])
     df_predictions = df_clean.withColumn("prediction", predict_attack(features_struct))
 
-    # Sink: Write to InfluxDB and HDFS
+    # Sink: Write to InfluxDB, HDFS and Kafka Alerts via foreachBatch
     print("Starting Streaming Query...")
     query = df_predictions.writeStream \
         .foreachBatch(process_batch) \
