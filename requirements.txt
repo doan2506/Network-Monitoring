@@ -8,3 +8,5 @@ numpy
 pyarrow
 setuptools
 imbalanced-learn
+python-dotenv
+requests
