@@ -1,16 +1,14 @@
 import os
-import joblib
-import pandas as pd
+import time
 import warnings
-from typing import Iterator
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import from_json, col
+from pyspark.sql import functions as F
+from pyspark.sql.types import StructType, StructField, DoubleType
+from pyspark.ml import PipelineModel
+from influxdb import InfluxDBClient
 
 warnings.filterwarnings("ignore")
-
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col, struct, pandas_udf
-from pyspark.sql import functions as F
-from pyspark.sql.types import StructType, StructField, DoubleType, IntegerType
-from influxdb import InfluxDBClient
 
 # Global InfluxDB client reference (explicitly initialized in main)
 influx_client = None
@@ -51,23 +49,10 @@ spark.sparkContext.setLogLevel("ERROR")
 # Schema for incoming JSON data
 schema = StructType([StructField(c, DoubleType(), True) for c in FEATURE_COLS])
 
-# Broadcast Scikit-learn Pipeline
-script_dir = os.path.dirname(os.path.abspath(__file__))
-model_path = os.path.join(script_dir, "training_model", "rf_pipeline.pkl")
-rf_pipeline = joblib.load(model_path)
-broadcast_model = spark.sparkContext.broadcast(rf_pipeline)
-
-# Pandas UDF for model inference
-@pandas_udf(IntegerType())
-def predict_attack(iterator: Iterator[pd.DataFrame]) -> Iterator[pd.Series]:
-    model = broadcast_model.value
-    for pdf in iterator:
-        pdf = pdf[FEATURE_COLS]
-        pdf = pdf.fillna(0.0)
-        predictions = model.predict(pdf)
-        yield pd.Series(predictions)
+# ML model prediction is now handled natively by Spark MLlib PipelineModel loaded at runtime.
 
 def process_batch(batch_df, batch_id):
+    start_time = time.time()
     batch_df.write.mode("append").parquet("./hdfs_data/processed_traffic")
     
     # Compute metrics using Spark aggregation to avoid pulling raw data to the driver
@@ -102,7 +87,9 @@ def process_batch(batch_df, batch_id):
     try:
         if influx_client is not None:
             influx_client.write_points(json_body)
-        print(f"Batch {batch_id} processed: {total_records} records, {attack_count} attacks detected.")
+        duration = time.time() - start_time
+        throughput = total_records / duration if duration > 0 else 0
+        print(f"Batch {batch_id} processed: {total_records} records (Benign: {benign_count}, Attack: {attack_count}) in {duration:.3f} sec ({throughput:.1f} records/sec).")
     except Exception as e:
         print(f"Error writing to InfluxDB: {e}")
 
@@ -114,6 +101,16 @@ def main():
         influx_client.create_database('ids_db')
     except Exception as e:
         print(f"Warning: Could not initialize InfluxDB database: {e}")
+        
+    print("Loading PySpark MLlib PipelineModel...")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(script_dir, "training_model", "spark_rf_model")
+    try:
+        model = PipelineModel.load(model_path)
+        print("Model loaded successfully.")
+    except Exception as e:
+        print(f"Error loading PipelineModel from {model_path}: {e}")
+        return
         
     print("Connecting to Kafka...")
     
@@ -130,9 +127,12 @@ def main():
     df_parsed = df_kafka.select(from_json(col("value").cast("string"), schema).alias("data")).select("data.*")
     df_clean = df_parsed.na.fill(0.0)
 
-    # Predict using ML Model UDF
-    features_struct = struct(*[col(c) for c in FEATURE_COLS])
-    df_predictions = df_clean.withColumn("prediction", predict_attack(features_struct))
+    # Assert schema compatibility before predicting
+    missing_cols = set(FEATURE_COLS) - set(df_clean.columns)
+    assert not missing_cols, f"Missing feature columns in the input stream: {missing_cols}"
+
+    # Predict using native PySpark MLlib PipelineModel
+    df_predictions = model.transform(df_clean)
 
     # Sink: Write to InfluxDB and HDFS
     print("Starting Streaming Query...")
