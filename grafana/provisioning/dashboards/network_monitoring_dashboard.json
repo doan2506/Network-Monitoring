@@ -63,7 +63,7 @@
                       "group": "influxdb",
                       "version": "v0",
                       "datasource": {
-                        "name": "bfpnyzm56pr7kb"
+                        "name": "InfluxDB"
                       },
                       "spec": {
                         "groupBy": [
@@ -210,7 +210,7 @@
                       "group": "influxdb",
                       "version": "v0",
                       "datasource": {
-                        "name": "bfpnyzm56pr7kb"
+                        "name": "InfluxDB"
                       },
                       "spec": {
                         "groupBy": [
@@ -357,7 +357,7 @@
                       "group": "influxdb",
                       "version": "v0",
                       "datasource": {
-                        "name": "bfpnyzm56pr7kb"
+                        "name": "InfluxDB"
                       },
                       "spec": {
                         "query": "SELECT mean(\"syn_flags\") AS \"SYN\", mean(\"ack_flags\") AS \"ACK\", mean(\"rst_flags\") AS \"RST\", mean(\"fin_flags\") AS \"FIN\", mean(\"psh_flags\") AS \"PSH\" FROM \"network_traffic_stats\" WHERE time >= now() -\n  1h GROUP BY time(10s)",
@@ -474,7 +474,7 @@
                       "group": "influxdb",
                       "version": "v0",
                       "datasource": {
-                        "name": "bfpnyzm56pr7kb"
+                        "name": "InfluxDB"
                       },
                       "spec": {
                         "query": "SELECT mean(\"flow_packets_s\") AS \"Packets/s\", mean(\"flow_bytes_s\") AS \"Bytes/s\" FROM \"network_traffic_stats\" WHERE time >= now() - 1h GROUP BY time(10s)",
@@ -557,7 +557,7 @@
                       "group": "influxdb",
                       "version": "v0",
                       "datasource": {
-                        "name": "bfpnyzm56pr7kb"
+                        "name": "InfluxDB"
                       },
                       "spec": {
                         "query": "SELECT mean(\"fwd_pkt_len_max\") AS \"Max Fwd Packet Size\", mean(\"bwd_pkt_len_max\") AS \"Max Bwd Packet Size\" FROM \"network_traffic_stats\" WHERE time >= now() - 1h GROUP BY time(10s)",
@@ -674,7 +674,7 @@
                       "group": "influxdb",
                       "version": "v0",
                       "datasource": {
-                        "name": "bfpnyzm56pr7kb"
+                        "name": "InfluxDB"
                       },
                       "spec": {
                         "query": "SELECT mean(\"flow_duration\") AS \"Avg Duration\" FROM \"network_traffic_stats\" WHERE time >= now() - 1h GROUP BY time(10s)",
