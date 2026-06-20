@@ -41,8 +41,10 @@ def run_producer():
                 if col in df.columns:
                     df = df.drop(columns=[col])
             
-            for index, row in df.iterrows():
-                record = row.to_dict()
+            # Convert the dataframe to a list of dictionaries highly efficiently
+            records = df.to_dict(orient='records')
+            
+            for index, record in enumerate(records):
                 producer.send(topic_name, record)
                 
                 if index > 0 and index % 100 == 0:
