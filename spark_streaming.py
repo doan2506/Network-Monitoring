@@ -1,13 +1,19 @@
 import os
 import joblib
 import pandas as pd
+import warnings
 from typing import Iterator
+
+warnings.filterwarnings("ignore")
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col, struct, pandas_udf
 from pyspark.sql import functions as F
 from pyspark.sql.types import StructType, StructField, DoubleType, IntegerType
 from influxdb import InfluxDBClient
+
+# Global InfluxDB client reference (explicitly initialized in main)
+influx_client = None
 
 # Feature columns extracted from notebook
 FEATURE_COLS = [
@@ -80,8 +86,6 @@ def process_batch(batch_df, batch_id):
     attack_count = int(metrics["attack_count"]) if metrics["attack_count"] is not None else 0
     benign_count = int(metrics["benign_count"]) if metrics["benign_count"] is not None else 0
         
-    client = InfluxDBClient(host='localhost', port=8086, database='ids_db')
-    
     json_body = [
         {
             "measurement": "network_traffic_stats",
@@ -96,14 +100,21 @@ def process_batch(batch_df, batch_id):
         }
     ]
     try:
-        # Need to create DB if not exists
-        client.create_database('ids_db')
-        client.write_points(json_body)
+        if influx_client is not None:
+            influx_client.write_points(json_body)
         print(f"Batch {batch_id} processed: {total_records} records, {attack_count} attacks detected.")
     except Exception as e:
         print(f"Error writing to InfluxDB: {e}")
 
 def main():
+    global influx_client
+    print("Connecting to InfluxDB...")
+    try:
+        influx_client = InfluxDBClient(host='localhost', port=8086, database='ids_db')
+        influx_client.create_database('ids_db')
+    except Exception as e:
+        print(f"Warning: Could not initialize InfluxDB database: {e}")
+        
     print("Connecting to Kafka...")
     
     # Read Stream from Kafka
