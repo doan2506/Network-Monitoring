@@ -2,7 +2,7 @@
 
 ## Demo & Deliverables
 *   **Demo Video**: [Watch E2E System Demo Video on Google Drive](https://drive.google.com/file/d/1TqQe7CIiEVBauEuLulRYxk8pxjPPVIJA/view)
-*   **Project Report**: `report.pdf` (LaTeX Source: [report.tex](file:///f:/Tin/code/UETTTTTTTTTTTTTTTTTTTTTTT/Big%20Data/Network-Monitoring/report.tex))
+*   **Project Report**: `report.pdf` 
 *   **Presentation Slides**: `slide.pdf`
 
 ## Architecture Overview
