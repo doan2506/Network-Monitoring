@@ -1,7 +1,12 @@
 # Real-Time Network Monitoring & Incident Detection Pipeline
 
+## Demo & Deliverables
+*   **Demo Video**: [Watch E2E System Demo Video on Google Drive](https://drive.google.com/file/d/1TqQe7CIiEVBauEuLulRYxk8pxjPPVIJA/view)
+*   **Project Report**: `report.pdf` (LaTeX Source: [report.tex](file:///f:/Tin/code/UETTTTTTTTTTTTTTTTTTTTTTT/Big%20Data/Network-Monitoring/report.tex))
+*   **Presentation Slides**: `slide.pdf`
+
 ## Architecture Overview
-This project implements a big data pipeline to monitor network traffic in real-time, detecting cyber attacks using the CIC-IDS2017 dataset and a pre-trained Random Forest model.
+This project implements a big data pipeline to monitor network traffic in real-time, detecting cyber attacks using the CIC-IDS2017 dataset and a native PySpark MLlib Random Forest model.
 
 ### Dataset
 - **Full CIC-IDS2017**: [https://www.unb.ca/cic/datasets/ids-2017.html](https://www.unb.ca/cic/datasets/ids-2017.html)
@@ -18,8 +23,11 @@ This project implements a big data pipeline to monitor network traffic in real-t
 
 ## Project Structure
 - `docker-compose.yml`: Provisions Zookeeper, Kafka, InfluxDB, and Grafana.
-- `kafka_producer.py`: Reads CIC-IDS2017 `.parquet` files and streams them into Kafka topic `network_traffic`.
-- `spark_streaming.py`: Spark job that consumes from Kafka, applies the Scikit-learn `rf_pipeline.pkl` model using Pandas UDF, and writes metrics to InfluxDB and raw processed data to HDFS.
+- `kafka_producer.py`: Reads Parquet traffic dataset files and streams them into Kafka topic `network_traffic` with a 50ms delay simulation.
+- `spark_streaming.py`: Spark Structured Streaming job that consumes from Kafka, applies the native PySpark MLlib `PipelineModel` (`spark_rf_model`) directly in the JVM for real-time predictions, writes metrics to InfluxDB, saves processed data to local Parquet files, and posts alerts to `network_alerts`.
+- `telegram_alerter.py`: A daemon script that consumes from `network_alerts` topic and posts incident summaries to a Telegram channel.
+- `smoke_test_model.py`: Isolation test to verify model loading.
+- `delete_crc.py`: Helper script to clean up CRC checksum files to prevent Windows/WSL path mismatches.
 - `requirements.txt`: Python dependencies required to run the pipeline.
 
 ---
